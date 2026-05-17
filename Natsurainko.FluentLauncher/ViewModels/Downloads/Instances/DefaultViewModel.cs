@@ -4,6 +4,7 @@ using CommunityToolkit.WinUI;
 using FluentLauncher.Infra.UI.Navigation;
 using FluentLauncher.Infra.UI.Notification;
 using Microsoft.UI.Xaml.Controls;
+using Natsurainko.FluentLauncher.Services.Download;
 using Natsurainko.FluentLauncher.Services.Launch;
 using Natsurainko.FluentLauncher.Services.Network;
 using Natsurainko.FluentLauncher.Services.UI;
@@ -11,26 +12,24 @@ using Natsurainko.FluentLauncher.Services.UI.Notification;
 using Natsurainko.FluentLauncher.Utils;
 using Nrk.FluentCore.GameManagement.Installer;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Text.Json;
-using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using static Natsurainko.FluentLauncher.Services.UI.SearchProviderService;
 
 namespace Natsurainko.FluentLauncher.ViewModels.Downloads.Instances;
 
 internal partial class DefaultViewModel(
-    CacheInterfaceService cacheInterfaceService,
+    MindustryReleaseService mindustryReleaseService,
     SearchProviderService searchProviderService,
     INavigationService navigationService,
     GameService gameService,
     INotificationService notificationService) : PageVM, INavigationAware
 {
-    private string _versionManifestJson = null!;
     private BindedSearchProvider? _bindedSearchProvider;
 
-    public VersionManifestItem[] AllInstances { get; private set; } = null!;
+    public List<VersionManifestItem> AllInstances { get; private set; } = new();
 
     [ObservableProperty]
     public partial ObservableCollection<VersionManifestItem> FilteredInstances { get; set; }
@@ -45,6 +44,13 @@ internal partial class DefaultViewModel(
     [NotifyPropertyChangedFor(nameof(HasQuery))]
     public partial string SearchQuery { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Selected Mindustry source (0=Mindustry, 1=MindustryX, 2=CN-ARC, 3=Foo).
+    /// Bound to the source dropdown. Changing this triggers a reload from the
+    /// corresponding GitHub repo via <see cref="MindustryReleaseService"/>.
+    /// (Property name kept as <c>ReleaseTypeFilterIndex</c> so the XAML binding
+    /// in <c>DefaultPage.xaml</c> stays valid; the semantic is now "source".)
+    /// </summary>
     [ObservableProperty]
     public partial int ReleaseTypeFilterIndex { get; set; }
 
@@ -57,7 +63,8 @@ internal partial class DefaultViewModel(
     {
         if (this.IsActive)
         {
-            SearchReceiveHandle(SearchQuery);
+            // User picked a different source; refetch.
+            _ = LoadMindustryReleasesAsync();
         }
     }
 
@@ -69,12 +76,7 @@ internal partial class DefaultViewModel(
         if (parameter is string searchInstanceId)
             SearchQuery = searchInstanceId;
 
-        cacheInterfaceService.RequestStringAsync(
-            cacheInterfaceService.VersionManifest,
-            Services.Network.Data.InterfaceRequestMethod.PreferredLocal,
-            ParseVersionManifestTask,
-            "cache-interfaces\\piston-meta.mojang.com\\version_manifest_v2.json")
-        .ContinueWith(ParseVersionManifestTask!);
+        _ = LoadMindustryReleasesAsync();
     }
 
     void INavigationAware.OnNavigatedFrom()
@@ -121,38 +123,20 @@ internal partial class DefaultViewModel(
         SearchReceiveHandle(string.Empty);
     }
 
-    async void ParseVersionManifestTask(Task<string> task)
+    private async Task LoadMindustryReleasesAsync()
     {
-        if (task.IsFaulted)
-        {
-            await App.DispatcherQueue.EnqueueAsync(() => Loading = false);
-            notificationService.LoadInstancesFailed(task.Exception!);
-            return;
-        }
-
-        if (string.IsNullOrEmpty(task.Result))
-            return;
+        await Dispatcher.EnqueueAsync(() => Loading = true);
 
         try
         {
-            string versionManifestJson = task.Result;
-
-            if (!string.IsNullOrEmpty(_versionManifestJson) && versionManifestJson == _versionManifestJson)
-                return;
-
-            VersionManifestJsonObject versionManifest = JsonNode.Parse(versionManifestJson)
-                .Deserialize(FLSerializerContext.Default.VersionManifestJsonObject)!;
-
-            VersionManifestItem[] instances = versionManifest.Versions;
-            var latestRelease = instances.FirstOrDefault(i => i.Type == "release")!;
-            var latestSnapshot = instances.FirstOrDefault(i => i.Type == "snapshot")!;
-
-            if (string.IsNullOrEmpty(_versionManifestJson))
-                _versionManifestJson = versionManifestJson;
+            var source = MindustryReleaseService.SourceFromIndex(ReleaseTypeFilterIndex);
+            var releases = await mindustryReleaseService.GetReleasesAsync(source);
+            var latestRelease = releases.FirstOrDefault(r => r.Type == "release")!;
+            var latestSnapshot = releases.FirstOrDefault(r => r.Type == "snapshot")!;
 
             await Dispatcher.EnqueueAsync(() =>
             {
-                AllInstances = instances;
+                AllInstances = releases;
                 LatestRelease = latestRelease;
                 LatestSnapshot = latestSnapshot;
                 SearchReceiveHandle(SearchQuery);
@@ -170,18 +154,10 @@ internal partial class DefaultViewModel(
 
     async void SearchReceiveHandle(string query)
     {
-        string releaseType = ReleaseTypeFilterIndex switch
-        {
-            0 => "release",
-            1 => "snapshot",
-            2 => "old_beta",
-            3 => "old_alpha",
-            _ => throw new InvalidOperationException()
-        };
-
+        // The dropdown is now a source selector, not a release-type filter.
+        // Show all releases from the chosen source, optionally filtered by query.
         var filteredInstances = AllInstances?
-            .Where(i => i.Type == releaseType)
-            .Where(i => i.Id.Contains(query))
+            .Where(i => string.IsNullOrEmpty(query) || i.Id.Contains(query, StringComparison.OrdinalIgnoreCase))
             .ToArray() ?? [];
 
         await Dispatcher.EnqueueAsync(() =>

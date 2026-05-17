@@ -6,6 +6,7 @@ using Natsurainko.FluentLauncher.Utils;
 using System;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Windows.Storage;
@@ -274,10 +275,94 @@ public partial class SettingsService : SettingsContainer
             SettingsVersion = 4u;
         }
 
+        if (SettingsVersion == 4u) // Version 4: Mindustry rebrand — rewrite ".minecraft" paths to "Mindustry"
+        {
+            MigrateMinecraftPathsToMindustry();
+            SettingsVersion = 5u;
+        }
+
+        if (SettingsVersion == 5u) // Version 5: switch from game folder (\Mindustry) to launcher root (\Xenon-Fluent)
+        {
+            MigrateToLauncherRoot();
+            SettingsVersion = 6u;
+        }
+
+        if (SettingsVersion == 6u) // Version 6: relocate launcher root out of MSIX-virtualized %AppData% to %UserProfile%\Documents
+        {
+            MigrateToLauncherRoot(); // re-runs with the now-Documents-based LauncherRoot, drops the AppData entry
+            SettingsVersion = 7u;
+        }
+
         //if (SettingsVersion == N) // Version N: Release vNext
         //{
         //    SettingsVersion = N + 1;
         //}
+    }
+
+    /// <summary>
+    /// Mindustry rebrand migration: rewrites any persisted Minecraft data folder paths
+    /// (ending in <c>\.minecraft</c>) to point at the corresponding <c>\Mindustry</c>
+    /// folder. Runs before <see cref="MinecraftFolders"/> is populated so the
+    /// in-memory state never sees the stale value.
+    /// </summary>
+    private static void MigrateMinecraftPathsToMindustry()
+    {
+        var appsettings = ApplicationData.Current.LocalSettings;
+
+        // 1. Folder list
+        if (appsettings.Values["MinecraftFolders"] is string foldersJson)
+        {
+            var folders = JsonSerializer.Deserialize(foldersJson, FLSerializerContext.Default.StringArray) ?? [];
+            bool changed = false;
+            for (int i = 0; i < folders.Length; i++)
+            {
+                var rewritten = RewriteDotMinecraft(folders[i]);
+                if (rewritten != folders[i])
+                {
+                    folders[i] = rewritten;
+                    changed = true;
+                }
+            }
+            if (changed)
+                appsettings.Values["MinecraftFolders"] = JsonSerializer.Serialize(folders, FLSerializerContext.Default.StringArray);
+        }
+
+        // 2. Active folder pointer
+        if (appsettings.Values["ActiveMinecraftFolder"] is string activeJson)
+        {
+            var active = JsonSerializer.Deserialize(activeJson, FLSerializerContext.Default.String);
+            var rewritten = RewriteDotMinecraft(active);
+            if (rewritten != active)
+                appsettings.Values["ActiveMinecraftFolder"] = JsonSerializer.Serialize(rewritten, FLSerializerContext.Default.String);
+        }
+    }
+
+    private static string? RewriteDotMinecraft(string? path)
+    {
+        if (string.IsNullOrEmpty(path)) return path;
+        // Trim trailing separators for comparison.
+        var trimmed = path.TrimEnd('\\', '/');
+        if (trimmed.EndsWith(@"\.minecraft", StringComparison.OrdinalIgnoreCase) ||
+            trimmed.EndsWith("/.minecraft", StringComparison.OrdinalIgnoreCase))
+        {
+            return trimmed[..^@"\.minecraft".Length] + @"\Mindustry";
+        }
+        return path;
+    }
+
+    /// <summary>
+    /// Switch to Xenon-Fluent's launcher root and discard any legacy folder
+    /// pointers (game data dirs, sandboxed AppData paths, etc). The launcher
+    /// owns its own root, so the folder list is reset to <c>[launcherRoot]</c>.
+    /// Idempotent — safe to run from multiple migration steps.
+    /// </summary>
+    private static void MigrateToLauncherRoot()
+    {
+        var appsettings = ApplicationData.Current.LocalSettings;
+        var launcherRoot = MindustryDataLocator.EnsureLauncherRoot();
+
+        appsettings.Values["MinecraftFolders"] = JsonSerializer.Serialize(new[] { launcherRoot }, FLSerializerContext.Default.StringArray);
+        appsettings.Values["ActiveMinecraftFolder"] = JsonSerializer.Serialize(launcherRoot, FLSerializerContext.Default.String);
     }
 
     private static void MigrateFrom_2_1_13_0()

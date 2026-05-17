@@ -20,6 +20,7 @@ using System;
 using System.Collections.Generic;
 using System.CommandLine;
 using System.Linq;
+using System.Net.Http;
 using System.Web;
 using Windows.System.UserProfile;
 using ViewModels = Natsurainko.FluentLauncher.ViewModels;
@@ -44,7 +45,8 @@ var pages = builder.Pages;
 
 // OOBE
 pages.WithPage<Views.OOBE.OOBENavigationPage, ViewModels.OOBE.OOBEViewModel>("OOBENavigationPage");
-pages.WithPage<Views.OOBE.AccountPage>("OOBEAccountPage");
+// Mindustry rebrand: account step removed from OOBE — see csproj account-UI exclude block.
+//pages.WithPage<Views.OOBE.AccountPage>("OOBEAccountPage");
 pages.WithPage<Views.OOBE.MinecraftFolderPage>("OOBEMinecraftFolderPage");
 pages.WithPage<Views.OOBE.JavaPage>("OOBEJavaPage");
 pages.WithPage<Views.OOBE.GetStartedPage>("OOBEGetStartedPage");
@@ -65,10 +67,12 @@ pages.WithPage<Views.Instances.ConfigPage, ViewModels.Instances.ConfigViewModel>
 pages.WithPage<Views.Instances.ModPage, ViewModels.Instances.ModViewModel>("Instances/Mod");
 pages.WithPage<Views.Instances.SavePage, ViewModels.Instances.SaveViewModel>("Instances/Save");
 
-// News page
-pages.WithPage<Views.News.NavigationPage, ViewModels.News.NavigationViewModel>("News/Navigation");
-pages.WithPage<Views.News.DefaultPage, ViewModels.News.DefaultViewModel>("News/Default");
-pages.WithPage<Views.News.NotePage, ViewModels.News.NoteViewModel>("News/Note");
+// News page (Minecraft news, removed for the Mindustry rebrand).
+// Source files stay on disk but are <Page Remove>/<Compile Remove>'d in the csproj,
+// so the symbols below no longer exist; keep the registrations commented for diff context.
+//pages.WithPage<Views.News.NavigationPage, ViewModels.News.NavigationViewModel>("News/Navigation");
+//pages.WithPage<Views.News.DefaultPage, ViewModels.News.DefaultViewModel>("News/Default");
+//pages.WithPage<Views.News.NotePage, ViewModels.News.NoteViewModel>("News/Note");
 
 // Resources download page
 
@@ -76,21 +80,11 @@ pages.WithPage<Views.Downloads.Instances.NavigationPage, ViewModels.Downloads.In
 pages.WithPage<Views.Downloads.Instances.DefaultPage, ViewModels.Downloads.Instances.DefaultViewModel>("InstancesDownload/Default");
 pages.WithPage<Views.Downloads.Instances.InstallPage, ViewModels.Downloads.Instances.InstallViewModel>("InstancesDownload/Install");
 
-pages.WithPage<Views.Downloads.Mods.NavigationPage, ViewModels.Downloads.Mods.NavigationViewModel>("ModsDownload/Navigation");
-pages.WithPage<Views.Downloads.ResourceDefaultPage, ViewModels.Downloads.Mods.DefaultViewModel>("ModsDownload/Default");
-pages.WithPage<Views.Downloads.ResourcePage, ViewModels.Downloads.ResourceViewModel>("ModsDownload/Resource");
-
-pages.WithPage<Views.Downloads.Modpacks.NavigationPage, ViewModels.Downloads.Modpacks.NavigationViewModel>("ModpacksDownload/Navigation");
-pages.WithPage<Views.Downloads.ResourceDefaultPage, ViewModels.Downloads.Modpacks.DefaultViewModel>("ModpacksDownload/Default");
-pages.WithPage<Views.Downloads.ResourcePage, ViewModels.Downloads.ResourceViewModel>("ModpacksDownload/Resource");
-
-pages.WithPage<Views.Downloads.TexturePacks.NavigationPage, ViewModels.Downloads.TexturePacks.NavigationViewModel>("TexturePacksDownload/Navigation");
-pages.WithPage<Views.Downloads.ResourceDefaultPage, ViewModels.Downloads.TexturePacks.DefaultViewModel>("TexturePacksDownload/Default");
-pages.WithPage<Views.Downloads.ResourcePage, ViewModels.Downloads.ResourceViewModel>("TexturePacksDownload/Resource");
-
-pages.WithPage<Views.Downloads.Shaders.NavigationPage, ViewModels.Downloads.Shaders.NavigationViewModel>("ShadersDownload/Navigation");
-pages.WithPage<Views.Downloads.ResourceDefaultPage, ViewModels.Downloads.Shaders.DefaultViewModel>("ShadersDownload/Default");
-pages.WithPage<Views.Downloads.ResourcePage, ViewModels.Downloads.ResourceViewModel>("ShadersDownload/Resource");
+// Mindustry mod browser (GitHub topic: mindustry-mod). The MC-style sub-pages
+// (CurseForge/Modrinth Default + Resource detail) and Modpacks/TexturePacks/Shaders
+// categories are intentionally not registered: the Mindustry workflow doesn't
+// need them and the source files for those pages are excluded in the csproj.
+pages.WithPage<Views.Downloads.Mods.NavigationPage, ViewModels.Downloads.MindustryModsViewModel>("ModsDownload/Navigation");
 
 // Tasks page
 pages.WithPage<Views.Tasks.LaunchPage, ViewModels.Tasks.LaunchViewModel>("Tasks/Launch");
@@ -100,12 +94,14 @@ pages.WithPage<Views.Tasks.DownloadPage, ViewModels.Tasks.DownloadViewModel>("Ta
 pages.WithPage<Views.Settings.NavigationPage, ViewModels.Settings.NavigationViewModel>("Settings/Navigation");
 pages.WithPage<Views.Settings.DefaultPage, ViewModels.Settings.DefaultViewModel>("Settings/Default");
 pages.WithPage<Views.Settings.LaunchPage, ViewModels.Settings.LaunchViewModel>("Settings/Launch");
-pages.WithPage<Views.Settings.AccountPage, ViewModels.Settings.AccountViewModel>("Settings/Account");
+// Mindustry rebrand: Settings > Account / Skin pages removed (no MC accounts).
+// Source files stay on disk but are excluded in the csproj account-UI block.
+//pages.WithPage<Views.Settings.AccountPage, ViewModels.Settings.AccountViewModel>("Settings/Account");
 pages.WithPage<Views.Settings.DownloadPage, ViewModels.Settings.DownloadViewModel>("Settings/Download");
 pages.WithPage<Views.Settings.AppearancePage, ViewModels.Settings.AppearanceViewModel>("Settings/Appearance");
 pages.WithPage<Views.Settings.LauncherPage, ViewModels.Settings.LauncherViewModel>("Settings/Launcher");
 pages.WithPage<Views.Settings.AboutPage, ViewModels.Settings.AboutViewModel>("Settings/About");
-pages.WithPage<Views.Settings.SkinPage, ViewModels.Settings.SkinViewModel>("Settings/Account/Skin");
+//pages.WithPage<Views.Settings.SkinPage, ViewModels.Settings.SkinViewModel>("Settings/Account/Skin");
 
 #endregion
 
@@ -114,10 +110,11 @@ pages.WithPage<Views.Settings.SkinPage, ViewModels.Settings.SkinViewModel>("Sett
 var dialogs = builder.Dialogs;
 
 dialogs.WithDialog<Views.Dialogs.AddArgumentDialog, ViewModels.Dialogs.AddArgumentDialogViewModel>("AddVmArgumentDialog");
-dialogs.WithDialog<Views.Dialogs.AuthenticateDialog, ViewModels.Dialogs.AuthenticateDialogViewModel>("AuthenticationWizardDialog");
+// Mindustry rebrand: account / skin dialogs removed — sources excluded in csproj.
+//dialogs.WithDialog<Views.Dialogs.AuthenticateDialog, ViewModels.Dialogs.AuthenticateDialogViewModel>("AuthenticationWizardDialog");
 dialogs.WithDialog<Views.Dialogs.DeleteInstanceDialog, ViewModels.Dialogs.DeleteInstanceDialogViewModel>("DeleteInstanceDialog");
-dialogs.WithDialog<Views.Dialogs.SwitchAccountDialog, ViewModels.Dialogs.SwitchAccountDialogViewModel>("SwitchAccountDialog");
-dialogs.WithDialog<Views.Dialogs.UploadSkinDialog, ViewModels.Dialogs.UploadSkinDialogViewModel>("UploadSkinDialog");
+//dialogs.WithDialog<Views.Dialogs.SwitchAccountDialog, ViewModels.Dialogs.SwitchAccountDialogViewModel>("SwitchAccountDialog");
+//dialogs.WithDialog<Views.Dialogs.UploadSkinDialog, ViewModels.Dialogs.UploadSkinDialogViewModel>("UploadSkinDialog");
 dialogs.WithDialog<Views.Dialogs.SelectColorDialog, ViewModels.Dialogs.SelectColorDialogViewModel>("SelectColorDialog");
 dialogs.WithDialog<Views.Dialogs.SelectImageThemeColorDialog, ViewModels.Dialogs.SelectImageThemeColorDialogViewModel>("SelectImageThemeColorDialog");
 dialogs.WithDialog<Views.Dialogs.CreateLaunchScriptDialog, ViewModels.Dialogs.CreateLaunchScriptDialogViewModel>("CreateLaunchScriptDialog");
@@ -147,6 +144,8 @@ services.AddSingleton<LaunchService>();
 services.AddSingleton<AccountService>();
 services.AddSingleton<AuthenticationService>();
 services.AddSingleton<DownloadService>();
+services.AddSingleton<Natsurainko.FluentLauncher.Services.Download.MindustryReleaseService>(sp =>
+    new(sp.GetRequiredService<HttpClient>()));
 services.AddSingleton<LocalStorageService>();
 services.AddSingleton<MessengerService>();
 services.AddSingleton<AppearanceService>();

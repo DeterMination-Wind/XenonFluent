@@ -1,11 +1,13 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
-using Microsoft.Windows.Globalization;
+// Mindustry rebrand: account-related types and globalization helpers are no
+// longer used because the account selector / Account converters are gone.
+//using Microsoft.Windows.Globalization;
 using Natsurainko.FluentLauncher.Services.Settings;
-using Natsurainko.FluentLauncher.Utils;
+//using Natsurainko.FluentLauncher.Utils;
 using Natsurainko.FluentLauncher.ViewModels.Home;
-using Nrk.FluentCore.Authentication;
+//using Nrk.FluentCore.Authentication;
 using System;
 using Windows.Foundation;
 using Windows.UI;
@@ -29,13 +31,12 @@ public sealed partial class HomePage : Page
 
         if (_settingsService.UseHomeControlsMask)
         {
-            Brush foregroundBrush = this.ActualTheme == ElementTheme.Light
-                ? new SolidColorBrush(Color.FromArgb(255, 26, 26, 26))
-                : new SolidColorBrush(Color.FromArgb(255, 255, 255, 255));
-
+            // Mindustry rebrand: AccountSelectorButton + AccountSelectorArea are gone
+            // (account UI removed). The mask only adjusts the remaining instance/launching
+            // areas and the launch button.
             LaunchButton.Translation += new System.Numerics.Vector3(0, 0, 16);
 
-            foreach (var border in new Border[] { InstanceSelectorArea, AccountSelectorArea, LaunchingInfoArea })
+            foreach (var border in new Border[] { InstanceSelectorArea, LaunchingInfoArea })
             {
                 border.Translation += new System.Numerics.Vector3(0, 0, 16);
                 border.Background = themeDictionaries["NavigationViewUnfoldedPaneBackground"] as AcrylicBrush;
@@ -43,24 +44,16 @@ public sealed partial class HomePage : Page
                 border.BorderBrush = themeDictionaries["ButtonBorderBrushPointerOver"] as Brush;
             }
 
-            AccountSelectorButton.Foreground = foregroundBrush;
-
             this.ActualThemeChanged += (_, e) =>
             {
                 var themeDictionaries = (App.Current.Resources.ThemeDictionaries[this.ActualTheme == ElementTheme.Light ? "Light" : "Dark"] as ResourceDictionary)!;
 
-                Brush foregroundBrush = this.ActualTheme == ElementTheme.Light
-                    ? new SolidColorBrush(Color.FromArgb(255, 26, 26, 26))
-                    : new SolidColorBrush(Color.FromArgb(255, 255, 255, 255));
-
-                foreach (var border in new Border[] { InstanceSelectorArea, AccountSelectorArea, LaunchingInfoArea })
+                foreach (var border in new Border[] { InstanceSelectorArea, LaunchingInfoArea })
                 {
                     border.Background = themeDictionaries["NavigationViewUnfoldedPaneBackground"] as AcrylicBrush;
                     border.BorderThickness = new Thickness(1);
                     border.BorderBrush = themeDictionaries["ButtonBorderBrushPointerOver"] as Brush;
                 }
-
-                AccountSelectorButton.Foreground = foregroundBrush;
             };
         }
 
@@ -98,12 +91,13 @@ public sealed partial class HomePage : Page
         this.DataContext = null;
 
         InstancesListView.ItemsSource = null;
-        AccountsListView.ItemsSource = null;
+        // Mindustry rebrand: AccountsListView removed alongside the account selector.
     }
 
     private void Flyout_Opened(object sender, object e) => InstancesListView.ScrollIntoView(VM.ActiveMinecraftInstance);
 
-    private void HideAccountFlyoutHandler(object sender, RoutedEventArgs e) => accountSelectorFlyout.Hide();
+    // Mindustry rebrand: HideAccountFlyoutHandler removed — the account flyout
+    // (and the AccountAvatar / DropDownButton that hosted it) are gone.
 
     private void DropDownButton_Click(object sender, RoutedEventArgs e)
     {
@@ -124,33 +118,7 @@ public sealed partial class HomePage : Page
         }
     }
 
-    #region Converters Methods
-
-    internal static string GetAccountTypeName(AccountType accountType)
-    {
-        string account = LocalizedStrings.Converters__Account;
-
-        if (!ApplicationLanguages.PrimaryLanguageOverride.StartsWith("zh-"))
-            account = " " + account;
-
-        return accountType switch
-        {
-            AccountType.Microsoft => LocalizedStrings.Converters__Microsoft + account,
-            AccountType.Yggdrasil => LocalizedStrings.Converters__Yggdrasil + account,
-            _ => LocalizedStrings.Converters__Offline + account,
-        };
-    }
-
-    internal static string TryGetYggdrasilServerName(Account account)
-    {
-        if (account is YggdrasilAccount yggdrasilAccount)
-        {
-            if (yggdrasilAccount.MetaData.TryGetValue("server_name", out var serverName))
-                return serverName;
-        }
-
-        return string.Empty;
-    }
-
-    #endregion
+    // Mindustry rebrand: GetAccountTypeName / TryGetYggdrasilServerName converters
+    // were only used by the now-removed account selector XAML. Dropped to keep
+    // the code-behind free of Microsoft / Yggdrasil account terminology.
 }

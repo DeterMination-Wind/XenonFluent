@@ -41,13 +41,7 @@
                     HeaderIcon="{xh:FontIcon Glyph=&#xED43;}"
                     IsClickEnabled="True" />
 
-                <controls:SettingsCard
-                    x:Uid="Instances_ModPage_Card2"
-                    Description="Even if the mods listed below exist, they will not be loaded"
-                    Foreground="{ThemeResource SystemErrorTextColor}"
-                    Header="This game does not have a mod loader or the modder does not support mods"
-                    HeaderIcon="{xh:FontIcon Glyph=&#xE711;}"
-                    Visibility="{x:Bind VM.NotSupportMod, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}" />
+                <!-- Mindustry rebrand: "no mod loader" warning removed — Mindustry has native mod support. -->
 
                 <TextBlock
                     x:Uid="Instances_ModPage_T1"

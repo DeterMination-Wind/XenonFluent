@@ -6,6 +6,10 @@ using FluentLauncher.Infra.UI.Navigation;
 using FluentLauncher.Infra.UI.Notification;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.Win32;
+using Natsurainko.FluentLauncher.Services;
+// Mindustry rebrand: AccountService is still injected (keeps the FluentCore
+// launch pipeline + ctor signature happy) but the OOBE no longer surfaces an
+// account step or any Account UI.
 using Natsurainko.FluentLauncher.Services.Accounts;
 using Natsurainko.FluentLauncher.Services.Launch;
 using Natsurainko.FluentLauncher.Services.Settings;
@@ -18,6 +22,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Windows.Storage;
 using Windows.Storage.Pickers;
@@ -33,7 +38,7 @@ internal partial class OOBEViewModel : ObservableObject, INavigationAware, ISett
     private readonly AccountService _accountService;
     private readonly IDialogActivationService<ContentDialogResult> _dialogs;
     private readonly INotificationService _notificationService;
-    private readonly string OfficialLauncherPath = $@"{Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)}\.minecraft";
+    private readonly string MindustryDataPath = Services.MindustryDataLocator.LauncherRoot;
 
     public INavigationService NavigationService { get; init; }
 
@@ -52,9 +57,9 @@ internal partial class OOBEViewModel : ObservableObject, INavigationAware, ISett
         _accountService = accountService;
         _dialogs = dialogs;
 
-        // Init accounts
-        Accounts = accountService.Accounts;
-        ActiveAccount = accountService.ActiveAccount;
+        // Mindustry rebrand: account list / active account no longer surfaced in OOBE.
+        // AccountService is still injected so FluentCore's launch pipeline keeps
+        // working, but the Account step and its bindings are gone.
 
         ((ISettingsViewModel)this).InitializeSettings();
     }
@@ -66,12 +71,13 @@ internal partial class OOBEViewModel : ObservableObject, INavigationAware, ISett
     [NotifyPropertyChangedFor(nameof(NextText))]
     public partial int CurrentPageIndex { get; set; }
 
+    // Mindustry rebrand: "OOBEAccountPage" removed — only 4 steps remain
+    // (Language / Mindustry Folder / Java / Get Started).
     private static readonly string[] OOBEPageKeys =
     {
         "OOBELanguagePage",
         "OOBEMinecraftFolderPage",
         "OOBEJavaPage",
-        "OOBEAccountPage",
         "OOBEGetStartedPage"
     };
 
@@ -95,6 +101,8 @@ internal partial class OOBEViewModel : ObservableObject, INavigationAware, ISett
         NextCommand.NotifyCanExecuteChanged();
     }
 
+    // Mindustry rebrand: account step removed — case 3 is now Get Started
+    // (was case 4 before the Account page got stripped).
     bool CanNext() => CurrentPageIndex switch
     {
         // Language page
@@ -105,10 +113,8 @@ internal partial class OOBEViewModel : ObservableObject, INavigationAware, ISett
         2 => !string.IsNullOrEmpty(ActiveJavaRuntime) &&
                 Directory.Exists(ActiveMinecraftFolder) &&
                 File.Exists(ActiveJavaRuntime),
-        // Account page
-        3 => ActiveAccount is not null,
         // Get started page
-        4 => true,
+        3 => true,
         // Default
         _ => false,
     };
@@ -195,28 +201,67 @@ internal partial class OOBEViewModel : ObservableObject, INavigationAware, ISett
     [RelayCommand]
     public void DetectOfficialMinecraftFolder()
     {
-        // Official launcher .minecraft folder not exist
-        if (!Directory.Exists(OfficialLauncherPath))
+        var candidates = MindustryDataLocator.ScanCandidates().ToList();
+
+        if (candidates.Count == 0)
         {
-            _notificationService.OfficialFolderNotFound(OfficialLauncherPath);
+            _notificationService.OfficialFolderNotFound(MindustryDataPath);
             return;
         }
 
-        // Already added
-        if (MinecraftFolders.Contains(OfficialLauncherPath))
+        string firstAdded = null;
+        foreach (var path in candidates)
         {
-            _notificationService.OfficialFolderExisted(OfficialLauncherPath);
-            return;
+            if (MinecraftFolders.Contains(path))
+                continue;
+
+            _gameService.AddMinecraftFolder(path);
+            firstAdded ??= path;
         }
 
-        // Add to list
+        if (firstAdded is not null)
+        {
+            ActiveMinecraftFolder = firstAdded;
+            _notificationService.OfficialFolderAdded(firstAdded);
+        }
+        else
+        {
+            // Every candidate already in the list — surface the primary path so the user
+            // sees something meaningful instead of silence.
+            _notificationService.OfficialFolderExisted(candidates[0]);
+        }
 
-        _gameService.AddMinecraftFolder(OfficialLauncherPath);
-        _notificationService.OfficialFolderAdded(OfficialLauncherPath);
+        TryDetectMindustryProfile(candidates);
     }
 
     [RelayCommand]
     public void RemoveFolder(string folder) => _gameService.RemoveMinecraftFolder(folder);
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasDetectedProfile))]
+    public partial string DetectedPlayerName { get; set; }
+
+    [ObservableProperty]
+    public partial string DetectedUUID { get; set; }
+
+    public bool HasDetectedProfile => !string.IsNullOrEmpty(DetectedPlayerName);
+
+    private void TryDetectMindustryProfile(System.Collections.Generic.IEnumerable<string> candidates)
+    {
+        // TODO: parse the Mindustry settings.bin (custom binary format, schema may shift between
+        // game versions) to surface the actual player name and UUID. For now we just flag that a
+        // settings.bin is present so the OOBE can hint that data was detected.
+        foreach (var folder in candidates)
+        {
+            string settingsBin = Path.Combine(folder, "settings.bin");
+            if (File.Exists(settingsBin))
+            {
+                DetectedPlayerName = "Mindustry";
+                DetectedUUID = null;
+                return;
+            }
+        }
+    }
 
     #endregion
 
@@ -282,9 +327,60 @@ internal partial class OOBEViewModel : ObservableObject, INavigationAware, ISett
         ActiveJavaRuntime = JavaRuntimes.Any() ? JavaRuntimes[0] : null;
     }
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanDownloadTemurin))]
+    public partial bool DownloadingTemurin { get; set; }
+
+    [ObservableProperty]
+    public partial double TemurinProgress { get; set; }
+
+    public bool CanDownloadTemurin => !DownloadingTemurin;
+
+    [RelayCommand]
+    public async Task DownloadTemurin()
+    {
+        try
+        {
+            DownloadingTemurin = true;
+            TemurinProgress = 0;
+
+            var downloader = new TemurinDownloader();
+            var progress = new Progress<double>(p => TemurinProgress = p);
+            var javaw = await downloader.DownloadAsync(
+                TemurinDownloader.GetRecommendedMajor(),
+                progress,
+                CancellationToken.None);
+
+            if (!JavaRuntimes.Contains(javaw))
+            {
+                JavaRuntimes.Add(javaw);
+                OnPropertyChanged(nameof(JavaRuntimes));
+            }
+
+            ActiveJavaRuntime = javaw;
+            _notificationService.JavaDownloaded(javaw);
+        }
+        catch (Exception ex)
+        {
+            _notificationService.JavaDownloadFailed(ex);
+        }
+        finally
+        {
+            DownloadingTemurin = false;
+            TemurinProgress = 0;
+        }
+    }
+
     #endregion
 
     #region Account
+    /*
+    // Mindustry rebrand: the entire OOBE Account region is removed. The page is
+    // gone (Views/OOBE/AccountPage.xaml{,.cs} excluded in csproj), and
+    // ActiveAccount/Accounts/Login/RemoveAccount no longer have any consumer.
+    // Kept commented for diff/restore context only — do not re-enable without
+    // restoring the corresponding page registration in Program.cs and the
+    // OOBEPageKeys array entry.
 
     public ReadOnlyObservableCollection<Account> Accounts { get; init; }
 
@@ -311,6 +407,7 @@ internal partial class OOBEViewModel : ObservableObject, INavigationAware, ISett
     {
         _accountService.RemoveAccount(account);
     }
+    */
     #endregion
 
     public string NextText
@@ -362,4 +459,10 @@ static partial class OOBEViewModelNotifications
 
     [ExceptionNotification(Title = "Notifications__JavaSearchFailed")]
     public static partial void JavaSearchFailed(this INotificationService notificationService, Exception exception);
+
+    [Notification<InfoBar>(Title = "Notifications__JavaDownloaded", Message = "{path}", Type = NotificationType.Success)]
+    public static partial void JavaDownloaded(this INotificationService notificationService, string path);
+
+    [ExceptionNotification(Title = "Notifications__JavaDownloadFailed")]
+    public static partial void JavaDownloadFailed(this INotificationService notificationService, Exception exception);
 }

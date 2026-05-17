@@ -70,7 +70,7 @@ public sealed partial class MainWindow : WindowEx, INavigationProvider, IRecipie
 
         App.GetService<InfoBarPresenter>().InitializeContainer(StackPanel);
 
-        AppWindow.Title = "Fluent Launcher";
+        AppWindow.Title = "Xenon-Fluent";
         AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Tall;
         (MinWidth, MinHeight) = _settingsService.FinishGuide ? (516, 328) : (1235, 675);
 

@@ -21,6 +21,11 @@ internal partial class TaskTemplateSelector : DataTemplateSelector
             return DownloadResourceTask;
         else if (item is InstallInstanceTaskViewModel)
             return InstallInstanceTask;
+        // Mindustry rebrand: route the simplified Mindustry install task through the
+        // same UI shell as the legacy multi-stage installer. Bindings for properties
+        // that don't exist on the new VM (IsLaunching, CurrentStage) silently no-op.
+        else if (item is MindustryInstallTaskViewModel)
+            return InstallInstanceTask;
 
         return base.SelectTemplateCore(item);
     }

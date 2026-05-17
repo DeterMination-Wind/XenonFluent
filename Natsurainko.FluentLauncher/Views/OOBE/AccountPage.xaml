@@ -61,7 +61,7 @@
                 </StackPanel>
                 <HyperlinkButton
                     x:Uid="OOBE_AccountPage_L"
-                    Content="Minecraft Official Website"
+                    Content="Mindustry Official Website"
                     NavigateUri="https://www.minecraft.net/en-us" />
             </StackPanel>
         </Grid>

@@ -319,36 +319,27 @@
                     <NavigationViewItem.MenuItems>
                         <NavigationViewItem
                             x:Uid="ShellPage_NV_SubItem_1"
-                            Content="Minecraft Instances"
+                            Content="Mindustry Instances"
                             Icon="{xh:FontIcon Glyph=&#xf158;}"
                             Tag="InstancesDownload/Navigation" />
                         <NavigationViewItem
                             x:Uid="ShellPage_NV_SubItem_2"
-                            Content="Mods"
+                            Content="Mindustry Mods"
                             Icon="{xh:FontIcon Glyph=&#xEA86;}"
                             Tag="ModsDownload/Navigation" />
-                        <NavigationViewItem
-                            x:Uid="ShellPage_NV_SubItem_3"
-                            Content="Modpacks"
-                            Icon="{xh:FontIcon Glyph=&#xF012;}"
-                            Tag="ModpacksDownload/Navigation" />
-                        <NavigationViewItem
-                            x:Uid="ShellPage_NV_SubItem_4"
-                            Content="TexturePacks"
-                            Icon="{xh:FontIcon Glyph=&#xE91B;}"
-                            Tag="TexturePacksDownload/Navigation" />
-                        <NavigationViewItem
-                            x:Uid="ShellPage_NV_SubItem_5"
-                            Content="Shaders"
-                            Icon="{xh:FontIcon Glyph=&#xE706;}"
-                            Tag="ShadersDownload/Navigation" />
                     </NavigationViewItem.MenuItems>
                 </NavigationViewItem>
+                <!--
+                    Minecraft/Mindustry news pane removed for the Mindustry rebrand.
+                    The News/* pages and ViewModels are <Page Remove>/<Compile Remove>'d
+                    in the csproj and unregistered in Program.cs, so this NavigationViewItem
+                    can't resolve a target page anymore.
                 <NavigationViewItem
                     x:Uid="ShellPage_NV_Item_4"
-                    Content="Minecraft News"
+                    Content="Mindustry News"
                     Icon="{xh:FontIcon Glyph=&#xe12a;}"
                     Tag="News/Navigation" />
+                -->
             </NavigationView.MenuItems>
 
             <NavigationView.FooterMenuItems>

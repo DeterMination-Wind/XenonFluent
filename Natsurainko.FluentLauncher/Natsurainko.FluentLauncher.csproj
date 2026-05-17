@@ -74,7 +74,7 @@
   <ItemGroup>
     <!-- NuGet Packages -->
     <PackageReference Include="ColorCode.WinUI" Version="2.0.15" />
-    <PackageReference Include="CommunityToolkit.Labs.WinUI.Controls.MarkdownTextBlock" Version="0.1.260319-build.2547" />
+    <PackageReference Include="CommunityToolkit.Labs.WinUI.Controls.MarkdownTextBlock" Version="0.1.251217-build.2433" />
     <PackageReference Include="HelixToolkit.SharpDX.Assimp" Version="3.1.2" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.1" />
     <PackageReference Include="CommunityToolkit.WinUI.Animations" Version="8.2.251219" />
@@ -278,5 +278,137 @@
   </ItemGroup>
   <ItemGroup Condition="$(FluentLauncherReleaseChannel) != 'Preview'">
     <Page Remove="Views\Dialogs\UpdateDialog.xaml" />
+  </ItemGroup>
+
+  <!--
+    Mindustry rebrand: exclude Minecraft-resource-market pages/VMs from the build.
+    Source files stay on disk so they can be diffed/restored, but XAML compilation
+    and code compilation skip them so nothing references CurseForge/Modrinth UI.
+  -->
+  <ItemGroup>
+    <!-- Mods.* MC sub-pages: keep Mods.NavigationPage (now the GitHub browser) -->
+    <Page Remove="Views\Downloads\ResourceDefaultPage.xaml" />
+    <Compile Remove="Views\Downloads\ResourceDefaultPage.xaml.cs" />
+    <Page Remove="Views\Downloads\ResourcePage.xaml" />
+    <Compile Remove="Views\Downloads\ResourcePage.xaml.cs" />
+
+    <!-- Modpacks navigation -->
+    <Page Remove="Views\Downloads\Modpacks.NavigationPage.xaml" />
+    <Compile Remove="Views\Downloads\Modpacks.NavigationPage.xaml.cs" />
+
+    <!-- Shaders navigation -->
+    <Page Remove="Views\Downloads\Shaders.NavigationPage.xaml" />
+    <Compile Remove="Views\Downloads\Shaders.NavigationPage.xaml.cs" />
+
+    <!-- TexturePacks navigation -->
+    <Page Remove="Views\Downloads\TexturePacks.NavigationPage.xaml" />
+    <Compile Remove="Views\Downloads\TexturePacks.NavigationPage.xaml.cs" />
+
+    <!--
+      Old MC-style ViewModels for the removed pages. These reference CurseForge/Modrinth
+      clients that are still in FluentCore, but the pages they back are gone, so we
+      strip them from compilation to make sure nothing rebinds to them by accident.
+    -->
+    <Compile Remove="ViewModels\Downloads\ResourceDefaultViewModel.cs" />
+    <Compile Remove="ViewModels\Downloads\ResourceViewModel.cs" />
+    <Compile Remove="ViewModels\Downloads\Mods\DefaultViewModel.cs" />
+    <Compile Remove="ViewModels\Downloads\Mods\NavigationViewModel.cs" />
+    <Compile Remove="ViewModels\Downloads\Modpacks\DefaultViewModel.cs" />
+    <Compile Remove="ViewModels\Downloads\Modpacks\NavigationViewModel.cs" />
+    <Compile Remove="ViewModels\Downloads\Shaders\DefaultViewModel.cs" />
+    <Compile Remove="ViewModels\Downloads\Shaders\NavigationViewModel.cs" />
+    <Compile Remove="ViewModels\Downloads\TexturePacks\DefaultViewModel.cs" />
+    <Compile Remove="ViewModels\Downloads\TexturePacks\NavigationViewModel.cs" />
+
+    <!--
+      Note: Xaml\Templates\{CurseForge,Modrinth}ResourceItemControlTemplate.* and
+      Xaml\Selectors\ResourceTemplateSelector.* remain compiled. They reference
+      Nrk.FluentCore types that still exist, are loaded by App.xaml's merged
+      dictionary, and removing them would cascade into App.xaml's converter
+      registrations. They are simply unused after the rebrand.
+    -->
+  </ItemGroup>
+
+  <!--
+    Mindustry rebrand: exclude the Minecraft News pages and ViewModels.
+    Source files stay on disk for diff/restore, but XAML and code compilation
+    skip them so nothing references the MC news feeds.
+  -->
+  <ItemGroup>
+    <Page Remove="Views\News\NavigationPage.xaml" />
+    <Compile Remove="Views\News\NavigationPage.xaml.cs" />
+    <Page Remove="Views\News\DefaultPage.xaml" />
+    <Compile Remove="Views\News\DefaultPage.xaml.cs" />
+    <Page Remove="Views\News\NotePage.xaml" />
+    <Compile Remove="Views\News\NotePage.xaml.cs" />
+
+    <Compile Remove="ViewModels\News\NavigationViewModel.cs" />
+    <Compile Remove="ViewModels\News\DefaultViewModel.cs" />
+    <Compile Remove="ViewModels\News\NoteViewModel.cs" />
+  </ItemGroup>
+
+  <!--
+    Mindustry rebrand: exclude the Minecraft account UI surface (login wizard,
+    switch/upload-skin dialogs, OOBE account step, Settings > Account / Skin
+    pages, AccountAvatar). The AccountService still ships in FluentCore and is
+    required by the launch pipeline, so the *service* layer stays compiled.
+    Only the user-facing pages and view-models that surface accounts/skins are
+    stripped from the build. Source files stay on disk so they can be diffed
+    or restored.
+  -->
+  <ItemGroup>
+    <!-- Authentication wizard pages (entire folder) -->
+    <Page Remove="Views\AuthenticationWizard\BrowserMicrosoftAuthPage.xaml" />
+    <Compile Remove="Views\AuthenticationWizard\BrowserMicrosoftAuthPage.xaml.cs" />
+    <Page Remove="Views\AuthenticationWizard\ChooseAccountTypePage.xaml" />
+    <Compile Remove="Views\AuthenticationWizard\ChooseAccountTypePage.xaml.cs" />
+    <Page Remove="Views\AuthenticationWizard\ChooseMicrosoftAuthMethodPage.xaml" />
+    <Compile Remove="Views\AuthenticationWizard\ChooseMicrosoftAuthMethodPage.xaml.cs" />
+    <Page Remove="Views\AuthenticationWizard\ConfirmProfilePage.xaml" />
+    <Compile Remove="Views\AuthenticationWizard\ConfirmProfilePage.xaml.cs" />
+    <Page Remove="Views\AuthenticationWizard\DeviceFlowMicrosoftAuthPage.xaml" />
+    <Compile Remove="Views\AuthenticationWizard\DeviceFlowMicrosoftAuthPage.xaml.cs" />
+    <Page Remove="Views\AuthenticationWizard\EnterOfflineProfilePage.xaml" />
+    <Compile Remove="Views\AuthenticationWizard\EnterOfflineProfilePage.xaml.cs" />
+    <Page Remove="Views\AuthenticationWizard\EnterYggdrasilProfilePage.xaml" />
+    <Compile Remove="Views\AuthenticationWizard\EnterYggdrasilProfilePage.xaml.cs" />
+
+    <!-- Authentication wizard view-models (entire folder) -->
+    <Compile Remove="ViewModels\AuthenticationWizard\BrowserMicrosoftAuthViewModel.cs" />
+    <Compile Remove="ViewModels\AuthenticationWizard\ChooseAccountTypeViewModel.cs" />
+    <Compile Remove="ViewModels\AuthenticationWizard\ChooseMicrosoftAuthMethodViewModel.cs" />
+    <Compile Remove="ViewModels\AuthenticationWizard\ConfirmProfileViewModel.cs" />
+    <Compile Remove="ViewModels\AuthenticationWizard\DeviceFlowMicrosoftAuthViewModel.cs" />
+    <Compile Remove="ViewModels\AuthenticationWizard\EnterOfflineProfileViewModel.cs" />
+    <Compile Remove="ViewModels\AuthenticationWizard\EnterYggdrasilProfileViewModel.cs" />
+
+    <!-- Authenticate / SwitchAccount / UploadSkin dialogs (their VMs reference the wizard VMs above) -->
+    <Page Remove="Views\Dialogs\AuthenticateDialog.xaml" />
+    <Compile Remove="Views\Dialogs\AuthenticateDialog.xaml.cs" />
+    <Compile Remove="ViewModels\Dialogs\AuthenticateDialogViewModel.cs" />
+    <Page Remove="Views\Dialogs\SwitchAccountDialog.xaml" />
+    <Compile Remove="Views\Dialogs\SwitchAccountDialog.xaml.cs" />
+    <Compile Remove="ViewModels\Dialogs\SwitchAccountDialogViewModel.cs" />
+    <Page Remove="Views\Dialogs\UploadSkinDialog.xaml" />
+    <Compile Remove="Views\Dialogs\UploadSkinDialog.xaml.cs" />
+    <Compile Remove="ViewModels\Dialogs\UploadSkinDialogViewModel.cs" />
+
+    <!-- Settings > Account page -->
+    <Page Remove="Views\Settings\AccountPage.xaml" />
+    <Compile Remove="Views\Settings\AccountPage.xaml.cs" />
+    <Compile Remove="ViewModels\Settings\AccountViewModel.cs" />
+
+    <!-- Settings > Skin page -->
+    <Page Remove="Views\Settings\SkinPage.xaml" />
+    <Compile Remove="Views\Settings\SkinPage.xaml.cs" />
+    <Compile Remove="ViewModels\Settings\SkinViewModel.cs" />
+
+    <!-- OOBE account step -->
+    <Page Remove="Views\OOBE\AccountPage.xaml" />
+    <Compile Remove="Views\OOBE\AccountPage.xaml.cs" />
+
+    <!-- AccountAvatar user control: only consumed by the pages excluded above -->
+    <Page Remove="UserControls\AccountAvatar.xaml" />
+    <Compile Remove="UserControls\AccountAvatar.xaml.cs" />
   </ItemGroup>
 </Project>

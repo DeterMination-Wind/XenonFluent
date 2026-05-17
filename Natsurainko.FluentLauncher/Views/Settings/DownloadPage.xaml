@@ -30,7 +30,7 @@
 
                 <controls:SettingsCard
                     x:Uid="Settings_DownloadPage_Card1"
-                    Description="Applicable to Minecraft original list pull and instance installation, loader installation, not applicable to other resource interfaces"
+                    Description="Applicable to Mindustry original list pull and instance installation, loader installation, not applicable to other resource interfaces"
                     Header="Current download source"
                     HeaderIcon="{xh:FontIcon Glyph=&#xEBD3;}">
                     <ComboBox MinWidth="200" SelectedIndex="{x:Bind VM.CurrentDownloadSource, Mode=TwoWay}">

@@ -50,6 +50,15 @@ internal partial class InstanceConfig(string filePath) : ObservableObject
     [ObservableProperty]
     public partial DateTime? LastLaunchTime { get; set; }
 
+    /// <summary>
+    /// Mindustry rebrand: full path to the Mindustry game .jar.
+    /// When set, <c>LaunchService</c> short-circuits the Minecraft launch pipeline
+    /// (account refresh, vanilla deps, MinecraftProcessBuilder) and runs
+    /// <c>javaw.exe -jar &lt;path&gt;</c> directly.
+    /// </summary>
+    [ObservableProperty]
+    public partial string? GameJarPath { get; set; }
+
     protected override void OnPropertyChanged(PropertyChangedEventArgs e)
     {
         base.OnPropertyChanged(e);

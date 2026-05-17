@@ -13,19 +13,21 @@ internal partial class ModInfoConverter : IValueConverter
     {
         if (value is MinecraftMod mod)
         {
-            if (mod.DisplayName.Equals(Path.GetFileNameWithoutExtension(mod.AbsolutePath)))
-                return "Unable to parse mod details";
-
             var strings = new List<string>();
-
-            if (mod.SupportedModLoaders != null && mod.SupportedModLoaders.Length != 0)
-                strings.Add(string.Join(",", mod.SupportedModLoaders));
 
             if (!string.IsNullOrEmpty(mod.Version))
                 strings.Add(mod.Version);
 
             if (!string.IsNullOrEmpty(mod.Description))
                 strings.Add(mod.Description);
+
+            if (mod.Authors != null && mod.Authors.Length != 0)
+                strings.Add(string.Join(", ", mod.Authors));
+
+            // Mindustry rebrand: dropped the SupportedModLoaders branch (Forge/Fabric concept).
+            // Only show "Unable to parse mod details" when we genuinely couldn't extract anything.
+            if (strings.Count == 0)
+                return "Unable to parse mod details";
 
             return string.Join(" | ", strings);
         }

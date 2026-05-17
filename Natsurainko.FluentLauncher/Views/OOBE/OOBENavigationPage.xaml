@@ -48,7 +48,7 @@
                     Tag="OOBELanguagePage" />
                 <NavigationViewItem
                     x:Uid="OOBE_OOBENavigationPage_NV_Item2"
-                    Content="Minecraft Folder"
+                    Content="Mindustry Folder"
                     Icon="{xh:FontIcon Glyph=&#xE8B7;}"
                     IsEnabled="False"
                     Tag="OOBEMinecraftFolderPage" />
@@ -58,12 +58,11 @@
                     Icon="{xh:FontIcon Glyph=&#xE8F1;}"
                     IsEnabled="False"
                     Tag="OOBEJavaPage" />
-                <NavigationViewItem
-                    x:Uid="OOBE_OOBENavigationPage_NV_Item4"
-                    Content="Account"
-                    Icon="{xh:FontIcon Glyph=&#xe77b;}"
-                    IsEnabled="False"
-                    Tag="OOBEAccountPage" />
+                <!--
+                    Mindustry rebrand: account step removed. The OOBEViewModel's
+                    OOBEPageKeys array no longer includes "OOBEAccountPage", and
+                    the page itself is excluded from compilation in the csproj.
+                -->
                 <NavigationViewItem
                     x:Uid="OOBE_OOBENavigationPage_NV_Item5"
                     Content="Get Started"

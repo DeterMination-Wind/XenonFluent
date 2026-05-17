@@ -37,3 +37,21 @@ AppPackages
 .editorconfig
 *.pfx
 *.resw
+
+# Xenon-Fluent runtime data (launcher root coincides with repo root during dev)
+/versions/
+/.data/
+/mods/
+/saves/
+
+# Debug / scratch artifacts
+_shot.png
+build.binlog
+xc.stdout.txt
+xc.stderr.txt
+debug-xamlc.ps1
+rebrand-csv.py
+rebrand-xaml.py
+regen-icons.py
+**/xc.out.txt
+**/xc.err.txt

@@ -28,19 +28,17 @@
                     x:Uid="Settings_DefaultPage_Card1"
                     Command="{x:Bind VM.CardClickCommand}"
                     CommandParameter="Settings/Launch"
-                    Description="Set up your .minecraft folder, Java runtime, and global game settings"
+                    Description="Set up your .mindustry folder, Java runtime, and global game settings"
                     Header="Launch settings"
                     HeaderIcon="{xh:FontIcon Glyph=&#xe945;}"
                     IsClickEnabled="True" />
 
-                <controls:SettingsCard
-                    x:Uid="Settings_DefaultPage_Card2"
-                    Command="{x:Bind VM.CardClickCommand}"
-                    CommandParameter="Settings/Account"
-                    Description="Manage login accounts and set skins for games"
-                    Header="Account &amp; Skin settings"
-                    HeaderIcon="{xh:FontIcon Glyph=&#xe77b;}"
-                    IsClickEnabled="True" />
+                <!--
+                    Mindustry rebrand: Account &amp; Skin entry point removed. The
+                    Settings/Account and Settings/Account/Skin pages and their
+                    view-models are excluded from compilation in the csproj, so
+                    this card no longer has a navigation target.
+                -->
 
                 <controls:SettingsCard
                     x:Uid="Settings_DefaultPage_Card3"

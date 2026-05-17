@@ -6,6 +6,9 @@ using FluentLauncher.Infra.UI.Navigation;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Natsurainko.FluentLauncher.Models;
+// Mindustry rebrand: AccountService is still injected so FluentCore's launch
+// pipeline keeps a valid singleton, but the Home page no longer surfaces any
+// account UI/binding.
 using Natsurainko.FluentLauncher.Services.Accounts;
 using Natsurainko.FluentLauncher.Services.Launch;
 using Natsurainko.FluentLauncher.Services.Settings;
@@ -13,7 +16,8 @@ using Natsurainko.FluentLauncher.Services.UI;
 using Natsurainko.FluentLauncher.Services.UI.Messaging;
 using Natsurainko.FluentLauncher.Utils;
 using Natsurainko.FluentLauncher.Utils.Extensions;
-using Nrk.FluentCore.Authentication;
+// Account types only referenced inside the commented-out account region below.
+//using Nrk.FluentCore.Authentication;
 using Nrk.FluentCore.GameManagement.Instances;
 using System;
 using System.Collections.Generic;
@@ -27,8 +31,7 @@ using static Natsurainko.FluentLauncher.Services.UI.SearchProviderService;
 namespace Natsurainko.FluentLauncher.ViewModels.Home;
 
 internal partial class HomeViewModel : PageVM, INavigationAware,
-    IRecipient<TrackLaunchTaskChangedMessage>, 
-    IRecipient<ActiveAccountChangedMessage>
+    IRecipient<TrackLaunchTaskChangedMessage>
 {
     private readonly GameService _gameService;
     private readonly AccountService _accountService;
@@ -42,8 +45,6 @@ internal partial class HomeViewModel : PageVM, INavigationAware,
     private BindedSearchProvider _bindedSearchProvider;
 
     public ReadOnlyObservableCollection<MinecraftInstance> MinecraftInstances { get; private set; }
-
-    public ReadOnlyObservableCollection<Account> Accounts { get; init; }
 
     public HomeViewModel(
         GameService gameService,
@@ -60,16 +61,39 @@ internal partial class HomeViewModel : PageVM, INavigationAware,
         _searchProviderService = searchProviderService;
         _dialogService = dialogService;
 
-        Accounts = accountService.Accounts;
-        ActiveAccount = accountService.ActiveAccount;
+        // Mindustry rebrand: account list / active account no longer surfaced on Home.
 
         MinecraftInstances = _gameService.Games;
         ActiveMinecraftInstance = _gameService.ActiveGame;
     }
 
+    #region Removed account bindings (Mindustry rebrand)
+    /*
+    // Originally surfaced through HomePage.xaml's account selector (now commented
+    // out). The AccountAvatar user-control + AuthenticationWizardDialog +
+    // Settings/Account page are all excluded from compilation in the csproj.
+    // Kept here as a diff/restore reference only.
+
+    public ReadOnlyObservableCollection<Account> Accounts { get; init; }
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(AccountTag))]
     public partial Account ActiveAccount { get; set; }
+
+    public Visibility AccountTag => ActiveAccount is null ? Visibility.Collapsed : Visibility.Visible;
+
+    partial void OnActiveAccountChanged(Account value) => _accountService.ActivateAccount(value);
+
+    [RelayCommand]
+    void GoToAccountSettings() => GlobalNavigate("Settings/Navigation", "Settings/Account");
+
+    [RelayCommand]
+    async Task AddAccount() => await _dialogService.ShowAsync("AuthenticationWizardDialog");
+
+    void IRecipient<ActiveAccountChangedMessage>.Receive(ActiveAccountChangedMessage message)
+        => Dispatcher.TryEnqueue(() => ActiveAccount = message.Value);
+    */
+    #endregion
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(InstanceSelectorText))]
@@ -97,7 +121,7 @@ internal partial class HomeViewModel : PageVM, INavigationAware,
     [ObservableProperty]
     public partial string LaunchButtonText { get; set; } = LocalizedStrings.Home_HomePage_LaunchButton_Text;
 
-    public Visibility AccountTag => ActiveAccount is null ? Visibility.Collapsed : Visibility.Visible;
+    // Mindustry rebrand: AccountTag removed (was bound to the old account selector).
 
     public string InstanceSelectorText => ActiveMinecraftInstance == null
         ? LocalizedStrings.Home_HomePage__NoInstanceSelected
@@ -131,7 +155,7 @@ internal partial class HomeViewModel : PageVM, INavigationAware,
             _gameService.ActivateGame(value);
     }
 
-    partial void OnActiveAccountChanged(Account value) => _accountService.ActivateAccount(value);
+    // Mindustry rebrand: OnActiveAccountChanged removed — see commented account region.
 
     [RelayCommand(CanExecute = nameof(CanExecuteLaunch))]
     async Task Launch()
@@ -158,11 +182,9 @@ internal partial class HomeViewModel : PageVM, INavigationAware,
     [RelayCommand]
     void GoToInstancesManage() => GlobalNavigate("Instances/Navigation");
 
-    [RelayCommand]
-    void GoToAccountSettings() => GlobalNavigate("Settings/Navigation", "Settings/Account");
-
-    [RelayCommand]
-    async Task AddAccount() => await _dialogService.ShowAsync("AuthenticationWizardDialog");
+    // Mindustry rebrand: GoToAccountSettings / AddAccount commands removed —
+    // their UI buttons are gone from HomePage.xaml and the target page/dialog
+    // are excluded from compilation in the csproj.
 
     [RelayCommand]
     void Continue() => WeakReferenceMessenger.Default.Send(new TrackLaunchTaskChangedMessage(null));
@@ -256,8 +278,8 @@ internal partial class HomeViewModel : PageVM, INavigationAware,
         });
     }
 
-    void IRecipient<ActiveAccountChangedMessage>.Receive(ActiveAccountChangedMessage message)
-        => Dispatcher.TryEnqueue(() => ActiveAccount = message.Value);
+    // Mindustry rebrand: ActiveAccountChangedMessage recipient removed —
+    // ActiveAccount no longer exists on this view-model.
 
     void SizeChanged(object s, WindowSizeChangedEventArgs e)
     {
@@ -273,8 +295,8 @@ internal partial class HomeViewModel : PageVM, INavigationAware,
         if (IsTrackingTask)
         {
             if (TrackingTask.ProcessLaunched)
-                LaunchButtonText = LocalizedStrings.Home_HomePage__KillProcess.Replace("Minecraft", TrackingTask.Title);
-            else LaunchButtonText = LocalizedStrings.Home_HomePage__CancelLaunch.Replace("Minecraft", TrackingTask.Title);
+                LaunchButtonText = LocalizedStrings.Home_HomePage__KillProcess.Replace("Mindustry", TrackingTask.Title);
+            else LaunchButtonText = LocalizedStrings.Home_HomePage__CancelLaunch.Replace("Mindustry", TrackingTask.Title);
 
             return;
         }

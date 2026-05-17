@@ -59,7 +59,7 @@
                 <TextBlock
                     x:Uid="AuthenticationWizard_ChooseAccountTypePage_NoMc"
                     Style="{ThemeResource BaseTextBlockStyle}"
-                    Text="Don't have Minecraft?" />
+                    Text="Don't have Mindustry?" />
             </HyperlinkButton>
         </StackPanel>
     </Grid>

@@ -33,7 +33,7 @@
 
                     <StackPanel Grid.Column="2" Spacing="4">
                         <TextBlock Style="{ThemeResource BaseTextBlockStyle}">
-                            <Run x:Uid="Tasks_LaunchPage_LaunchTitle" Text="Launch Minecraft:" />
+                            <Run x:Uid="Tasks_LaunchPage_LaunchTitle" Text="Launch Mindustry:" />
                             <Run Text="{Binding Title, Mode=OneWay}" />
                         </TextBlock>
                         <Border Background="{ThemeResource ProgressBarBackgroundThemeBrush}" CornerRadius="1">
@@ -220,7 +220,7 @@
                 </Grid>
 
                 <InfoBar
-                    Title="Minecraft Crashed"
+                    Title="Mindustry Crashed"
                     IsOpen="{Binding Crashed, Mode=OneWay}"
                     Message="Please check the Minecraft process log to identify any possible causes of the process crashing."
                     Severity="Warning"

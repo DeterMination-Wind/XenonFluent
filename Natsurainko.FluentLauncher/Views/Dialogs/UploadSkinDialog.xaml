@@ -51,7 +51,7 @@
                 </AutoSuggestBox>
                 <CheckBox
                     x:Uid="Dialogs_UploadSkinDialog_CheckBox"
-                    Content="Use slim Minecraft character shape"
+                    Content="Use slim Mindustry character shape"
                     IsChecked="{x:Bind VM.IsSlimModel, Mode=TwoWay}" />
             </StackPanel>
         </Grid>

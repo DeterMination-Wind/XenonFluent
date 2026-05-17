@@ -147,7 +147,7 @@
 
                 <controls:SettingsCard
                     x:Uid="Settings_AccountPage_Card2"
-                    Description="Will run Minecraft in trial mode"
+                    Description="Will run Mindustry in trial mode"
                     Header="Launch the game with a Demo account"
                     HeaderIcon="{xh:FontIcon Glyph=&#xEC7A;}">
                     <ToggleSwitch IsOn="{x:Bind VM.EnableDemoUser, Mode=TwoWay}" />

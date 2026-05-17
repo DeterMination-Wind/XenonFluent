@@ -14,7 +14,7 @@
     Version="2.3.9.0" />
 
   <Properties>
-    <DisplayName>Fluent Launcher (Dev)</DisplayName>
+    <DisplayName>Xenon-Fluent (Dev)</DisplayName>
     <PublisherDisplayName>Xcube Studio</PublisherDisplayName>
     <Logo>Assets\PackageIcons\Dev\StoreLogo.png</Logo>
   </Properties>
@@ -36,12 +36,12 @@
       Executable="$targetnametoken$.exe"
       EntryPoint="$targetentrypoint$">
       <uap:VisualElements
-        DisplayName="Fluent Launcher (Dev)"
-        Description="Fluent Launcher (Dev)"
+        DisplayName="Xenon-Fluent (Dev)"
+        Description="Xenon-Fluent (Dev) - Mindustry launcher"
         BackgroundColor="transparent"
         Square150x150Logo="Assets\PackageIcons\Dev\Square150x150Logo.png"
         Square44x44Logo="Assets\PackageIcons\Dev\Square44x44Logo.png">
-        <uap:DefaultTile Wide310x150Logo="Assets\PackageIcons\Dev\Wide310x150Logo.png"  Square71x71Logo="Assets\PackageIcons\Dev\SmallTile.png" Square310x310Logo="Assets\PackageIcons\Dev\LargeTile.png" ShortName="Fluent Launcher (Dev)"/>
+        <uap:DefaultTile Wide310x150Logo="Assets\PackageIcons\Dev\Wide310x150Logo.png"  Square71x71Logo="Assets\PackageIcons\Dev\SmallTile.png" Square310x310Logo="Assets\PackageIcons\Dev\LargeTile.png" ShortName="Xenon-Fluent (Dev)"/>
         <uap:SplashScreen Image="Assets\PackageIcons\Dev\SplashScreen.png"/>
       </uap:VisualElements>
 

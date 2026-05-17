@@ -34,7 +34,19 @@ internal partial class ModViewModel(INotificationService notificationService) : 
     void INavigationAware.OnNavigatedTo(object parameter)
     {
         MinecraftInstance = parameter as MinecraftInstance;
-        ModsFolder = MinecraftInstance.GetModsDirectory();
+
+        // Mindustry rebrand: each instance is isolated by pointing the AppData env
+        // var at "{workingDir}\.data" when launching, so mods/saves/settings.bin
+        // live under "{workingDir}\.data\Mindustry\..." per instance. Mirror that
+        // here so the UI and the running game agree on the same folder.
+        var jarPath = MinecraftInstance.GetConfig()?.GameJarPath;
+        if (!string.IsNullOrWhiteSpace(jarPath))
+        {
+            var workingDir = Path.GetDirectoryName(jarPath);
+            if (!string.IsNullOrEmpty(workingDir))
+                ModsFolder = Path.Combine(workingDir, ".data", "Mindustry", "mods");
+        }
+        ModsFolder ??= MinecraftInstance.GetModsDirectory();
 
         Directory.CreateDirectory(ModsFolder);
 
@@ -51,8 +63,45 @@ internal partial class ModViewModel(INotificationService notificationService) : 
     {
         await Dispatcher.EnqueueAsync(Mods.Clear);
 
-        await foreach (var minecraftMod in ModManager.EnumerateModsAsync(ModsFolder))
-            await Dispatcher.EnqueueAsync(() => Mods.Add(new ModItemVM(minecraftMod, notificationService)));
+        // Mindustry rebrand: parse mod.json / mod.hjson out of each .jar/.zip
+        // before falling back to FluentCore's Forge/Fabric parser.
+        foreach (var file in Directory.EnumerateFiles(ModsFolder))
+        {
+            var ext = Path.GetExtension(file);
+            if (!ext.Equals(".jar", StringComparison.OrdinalIgnoreCase) &&
+                !ext.Equals(".zip", StringComparison.OrdinalIgnoreCase) &&
+                !ext.Equals(".disabled", StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            MinecraftMod? info = null;
+            if (Services.Mods.MindustryModParser.TryParse(file, out var parsed))
+                info = parsed;
+
+            // Fall back to whatever the legacy parser can give us, then to a bare
+            // file-name placeholder so disabled/garbled mods still appear in the list.
+            if (info is null)
+            {
+                await foreach (var m in ModManager.EnumerateModsAsync(ModsFolder))
+                {
+                    if (string.Equals(m.AbsolutePath, file, StringComparison.OrdinalIgnoreCase))
+                    {
+                        info = m;
+                        break;
+                    }
+                }
+            }
+
+            info ??= new MinecraftMod
+            {
+                AbsolutePath = file,
+                DisplayName = Path.GetFileNameWithoutExtension(file),
+                IsEnabled = ext.Equals(".jar", StringComparison.OrdinalIgnoreCase)
+                         || ext.Equals(".zip", StringComparison.OrdinalIgnoreCase),
+            };
+
+            var captured = info;
+            await Dispatcher.EnqueueAsync(() => Mods.Add(new ModItemVM(captured, notificationService)));
+        }
     }
 
     [RelayCommand]

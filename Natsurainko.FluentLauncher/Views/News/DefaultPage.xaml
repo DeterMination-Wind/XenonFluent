@@ -40,7 +40,7 @@
                 <TextBlock
                     x:Uid="News_DefaultPage_T1"
                     Style="{ThemeResource SettingsTitleSectionHeaderTextBlockStyle}"
-                    Text="Minecraft Update" />
+                    Text="Mindustry Update" />
 
                 <FlipView
                     x:Name="FlipView"
@@ -152,7 +152,7 @@
                 <TextBlock
                     x:Uid="News_DefaultPage_T2"
                     Style="{ThemeResource SettingsSectionHeaderTextBlockStyle}"
-                    Text="Minecraft News" />
+                    Text="Mindustry News" />
 
                 <GridView ItemsSource="{x:Bind VM.NewsDatas, Mode=OneWay}">
                     <GridView.ItemTemplate>

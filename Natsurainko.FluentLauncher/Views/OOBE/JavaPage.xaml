@@ -66,6 +66,15 @@
                         </StackPanel>
                     </Button>
                 </StackPanel>
+                <Button
+                    x:Uid="OOBE_JavaPage_DownloadTemurinBtn"
+                    Command="{x:Bind VM.DownloadTemurinCommand}"
+                    Content="Download Temurin"
+                    IsEnabled="{x:Bind VM.CanDownloadTemurin, Mode=OneWay}" />
+                <ProgressBar
+                    Maximum="1"
+                    Value="{x:Bind VM.TemurinProgress, Mode=OneWay}"
+                    Visibility="{x:Bind VM.DownloadingTemurin, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}" />
             </StackPanel>
         </Grid>
 

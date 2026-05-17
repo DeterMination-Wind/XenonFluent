@@ -14,6 +14,7 @@ using Natsurainko.FluentLauncher.Exceptions;
 using Natsurainko.FluentLauncher.Models;
 using Natsurainko.FluentLauncher.Models.Launch;
 using Natsurainko.FluentLauncher.Models.UI;
+using Natsurainko.FluentLauncher.Services.Download;
 using Natsurainko.FluentLauncher.Services.Launch;
 using Natsurainko.FluentLauncher.Services.Network;
 using Natsurainko.FluentLauncher.Services.Settings;
@@ -33,6 +34,8 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
@@ -541,6 +544,248 @@ internal partial class InstallInstanceTaskViewModel(
 
     protected override void NotifyException(INotificationService notificationService)
         => notificationService.InstallFailed(ExecuteTask.Exception!.InnerException!, ExceptionTitle);
+
+    #endregion
+}
+
+#endregion
+
+#region Install Mindustry Instance Task
+
+/// <summary>
+/// Mindustry rebrand: install task for a single Mindustry release jar.
+///
+/// Replaces the multi-stage Minecraft installer (vanilla manifest → asset index →
+/// libraries → mods) with one stage: stream-download <c>Mindustry.jar</c> to
+/// <c>{activeFolder}/versions/{instanceId}/{instanceId}.jar</c>, write a minimal
+/// fake-vanilla <c>.json</c> next to it so <see cref="MinecraftInstanceParser"/>
+/// can parse it as a <see cref="VanillaMinecraftInstance"/>, then set
+/// <c>InstanceConfig.GameJarPath</c> so <c>LaunchService.LaunchAsync</c>'s
+/// Mindustry short-circuit can <c>java -jar</c> the file directly.
+/// </summary>
+internal partial class MindustryInstallTaskViewModel : TaskViewModel
+{
+    private readonly DownloadService _downloadService;
+    private readonly MindustryInstallConfig _config;
+
+    private DownloadTask? _downloadTask;
+    private MinecraftInstance? _minecraftInstance;
+
+    public MindustryInstallTaskViewModel(
+        DownloadService downloadService,
+        MindustryInstallConfig config)
+    {
+        _downloadService = downloadService;
+        _config = config;
+
+        // Single-stage view list, mirroring InstallInstanceTaskViewModel's UI shape.
+        StageViewModels =
+        [
+            new InstallationStageViewModel
+            {
+                TaskName = LocalizedStrings.GetString(
+                    "Tasks_DownloadPage__MindustryInstallationStage_DownloadMindustryJar"),
+                State = TaskState.Prepared,
+                TotalTasks = 1,
+            }
+        ];
+    }
+
+    protected override ILogger Logger { get; } = App.GetService<ILogger<MindustryInstallTaskViewModel>>();
+
+    #region Basic Properties
+
+    public override string Title => _config.InstanceId;
+
+    public override string Icon => TaskState switch
+    {
+        TaskState.Failed => "",
+        TaskState.Cancelled => "",
+        TaskState.Finished => "",
+        _ => "",
+    };
+
+    #endregion
+
+    #region Stage Properties (shared template fields)
+
+    public ObservableCollection<InstallationStageViewModel> StageViewModels { get; }
+
+    #endregion
+
+    [ObservableProperty]
+    public partial bool Installed { get; set; }
+
+    public string DownloadedBytes => LongExtensions.ToFileSizeString(_downloadTask?.DownloadedBytes);
+
+    public string TotalBytes => LongExtensions.ToFileSizeString(_downloadTask?.TotalBytes);
+
+    protected override async Task ExecuteAsync(CancellationToken cancellationToken)
+    {
+        var gameService = App.GetService<GameService>();
+        var instanceConfigService = App.GetService<InstanceConfigService>();
+
+        var rootFolder = gameService.ActiveMinecraftFolder
+            ?? throw new InvalidOperationException("No active Mindustry data folder selected");
+
+        var versionDir = Path.Combine(rootFolder, "versions", _config.InstanceId);
+        Directory.CreateDirectory(versionDir);
+
+        var jarPath = Path.Combine(versionDir, $"{_config.InstanceId}.jar");
+        var jsonPath = Path.Combine(versionDir, $"{_config.InstanceId}.json");
+
+        var stage = StageViewModels[0];
+        await App.DispatcherQueue.EnqueueAsync(() => stage.State = TaskState.Running);
+
+        // 1. Download the Mindustry .jar via the shared multipart downloader.
+        _downloadTask = _downloadService.Downloader.CreateDownloadTask(_config.DownloadUrl, jarPath);
+        var downloadResult = await _downloadTask.StartAsync(cancellationToken);
+
+        if (downloadResult.Type != DownloadResultType.Successful)
+        {
+            if (File.Exists(jarPath))
+            {
+                try { File.Delete(jarPath); } catch { /* best-effort */ }
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+
+            await App.DispatcherQueue.EnqueueAsync(() => stage.State = TaskState.Failed);
+            throw downloadResult.Exception ?? new IOException("Mindustry jar download failed");
+        }
+
+        // 2. Write a minimal fake-vanilla version JSON so MinecraftInstanceParser
+        //    accepts the directory and produces a VanillaMinecraftInstance.
+        //    The launch pipeline never executes this metadata for Mindustry instances:
+        //    LaunchService.LaunchAsync short-circuits on InstanceConfig.GameJarPath.
+        if (!File.Exists(jsonPath))
+        {
+            File.WriteAllText(jsonPath, BuildFakeVanillaVersionJson(_config.InstanceId));
+        }
+
+        // 3. Refresh the GameService so the new instance shows up in Home / lists.
+        await App.DispatcherQueue.EnqueueAsync(() => gameService.RefreshGames());
+
+        _minecraftInstance = gameService.Games.FirstOrDefault(g => g.InstanceId == _config.InstanceId);
+
+        // 4. Persist GameJarPath onto the instance config: this is what
+        //    LaunchService.LaunchAsync inspects to take the Mindustry short-circuit.
+        if (_minecraftInstance is not null)
+        {
+            var instanceConfig = instanceConfigService.GetConfig(_minecraftInstance);
+            instanceConfig.GameJarPath = jarPath;
+        }
+
+        await App.DispatcherQueue.EnqueueAsync(() =>
+        {
+            stage.FinishedTasks = stage.TotalTasks;
+            stage.State = TaskState.Finished;
+            Installed = true;
+            OnPropertyChanged(nameof(DownloadedBytes));
+            OnPropertyChanged(nameof(TotalBytes));
+        });
+    }
+
+    private static string BuildFakeVanillaVersionJson(string instanceId)
+    {
+        // Minimal shape to satisfy MinecraftInstanceParser.IsVanilla:
+        //   - id present, parseable by MinecraftVersion.Parse (use "1.0" so it goes to Other if instanceId isn't a release pattern)
+        //   - mainClass is one of the recognized vanilla mainclasses (so ParseVanilla path is taken)
+        //   - assetIndex.id is present (parser requires it for vanilla)
+        //   - no inheritsFrom, no tweakClass arguments
+        //
+        // The actual launch never reads this — Mindustry short-circuit in LaunchService
+        // bypasses the entire Minecraft pipeline.
+        return $$"""
+                 {
+                   "id": "{{instanceId}}",
+                   "type": "release",
+                   "mainClass": "net.minecraft.client.main.Main",
+                   "assetIndex": {
+                     "id": "mindustry",
+                     "sha1": "0000000000000000000000000000000000000000",
+                     "size": 0,
+                     "totalSize": 0,
+                     "url": ""
+                   },
+                   "libraries": [],
+                   "arguments": {
+                     "game": [],
+                     "jvm": []
+                   },
+                   "javaVersion": {
+                     "component": "java-runtime",
+                     "majorVersion": 17
+                   }
+                 }
+                 """;
+    }
+
+    [RelayCommand]
+    void Launch()
+    {
+        if (_minecraftInstance is null) return;
+        App.GetService<LaunchService>().LaunchFromUI(_minecraftInstance);
+    }
+
+    [RelayCommand]
+    void OpenInstanceFolder()
+    {
+        if (_minecraftInstance is null) return;
+        ExplorerHelper.OpenFolder(_minecraftInstance.GetGameDirectory());
+    }
+
+    [RelayCommand]
+    void Retry()
+    {
+        _downloadService.InstallMindustryInstanceAsync(_config).Forget();
+        Remove();
+    }
+
+    [RelayCommand]
+    void Remove() => _downloadService.DownloadTasks.Remove(this);
+
+    #region Timer Override (drive the progress bar from DownloadTask bytes)
+
+    protected override void Timer_Elapsed(object? sender, ElapsedEventArgs e)
+    {
+        base.Timer_Elapsed(sender, e);
+
+        double progress = 0;
+        if (_downloadTask?.TotalBytes is long total && total > 0)
+            progress = _downloadTask.DownloadedBytes / (double)total;
+
+        App.DispatcherQueue.TryEnqueue(() =>
+        {
+            Progress = progress;
+            OnPropertyChanged(nameof(DownloadedBytes));
+            OnPropertyChanged(nameof(TotalBytes));
+        });
+    }
+
+    #endregion
+
+    #region Exception
+
+    public override string InfoBarTitle => LocalizedStrings.Notifications__TaskFailed_Install;
+
+    public override string ExceptionTitle
+    {
+        get
+        {
+            return ExecuteTask?.Exception?.InnerException switch
+            {
+                TaskCanceledException => LocalizedStrings.Exceptions__TaskCanceledException,
+                _ => string.Empty
+            };
+        }
+    }
+
+    protected override void NotifyException(INotificationService notificationService)
+    {
+        if (ExecuteTask?.Exception?.InnerException is { } inner)
+            notificationService.InstallFailed(inner, ExceptionTitle);
+    }
 
     #endregion
 }

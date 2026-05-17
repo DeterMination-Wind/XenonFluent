@@ -30,7 +30,7 @@
                 <TextBlock
                     x:Uid="Settings_LaunchPage_T1"
                     Style="{ThemeResource SettingsTitleSectionHeaderTextBlockStyle}"
-                    Text=".minecraft Folders" />
+                    Text=".mindustry Folders" />
 
                 <StackPanel
                     Margin="0,20,0,15"
@@ -63,7 +63,7 @@
                                 Tag="ActiveMinecraftFolder">
                                 <controls:SettingsCard.Header>
                                     <StackPanel Orientation="Horizontal" Spacing="10">
-                                        <TextBlock x:Uid="Settings_LaunchPage_Text1" Text="Minecraft Folder" />
+                                        <TextBlock x:Uid="Settings_LaunchPage_Text1" Text="Mindustry Folder" />
                                         <HyperlinkButton
                                             Name="EnableText"
                                             Padding="5,0,5,0.5"
@@ -116,7 +116,7 @@
                     ActionIcon="{xh:FontIcon Glyph=&#xe838;}"
                     Command="{x:Bind VM.BrowserFolderCommand}"
                     Description="The imported folders will be displayed in the list above"
-                    Header="Import .minecraft Data Folder"
+                    Header="Import .mindustry Data Folder"
                     HeaderIcon="{xh:FontIcon Glyph=&#xe8f4;}"
                     IsClickEnabled="True" />
 
@@ -230,8 +230,31 @@
                     </Button>
                 </controls:SettingsCard>
                 <controls:SettingsCard
+                    x:Uid="Settings_LaunchPage_Card12"
+                    Description="Download Eclipse Temurin JDK and add it to the launcher automatically"
+                    Header="One-click Temurin Download"
+                    HeaderIcon="{xh:FontIcon Glyph=&#xebd3;}">
+                    <StackPanel
+                        Orientation="Horizontal"
+                        Spacing="10"
+                        VerticalAlignment="Center">
+                        <ProgressBar
+                            Width="160"
+                            VerticalAlignment="Center"
+                            Maximum="1"
+                            Value="{x:Bind VM.TemurinProgress, Mode=OneWay}"
+                            Visibility="{x:Bind VM.DownloadingTemurin, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}" />
+                        <Button
+                            x:Uid="Settings_LaunchPage_DownloadTemurinBtn"
+                            Height="32"
+                            Command="{x:Bind VM.DownloadTemurinCommand}"
+                            Content="Download Temurin"
+                            IsEnabled="{x:Bind VM.CanDownloadTemurin, Mode=OneWay}" />
+                    </StackPanel>
+                </controls:SettingsCard>
+                <controls:SettingsCard
                     x:Uid="Settings_LaunchPage_Card3"
-                    Description="Select the appropriate version of Java from the list to launch game according to the Minecraft version"
+                    Description="Select the appropriate version of Java from the list to launch game according to the Mindustry version"
                     Header="Automatically Select Java Runtime"
                     HeaderIcon="{xh:FontIcon Glyph=&#xeccb;}">
                     <ToggleSwitch IsOn="{x:Bind VM.EnableAutoJava, Mode=TwoWay}" />

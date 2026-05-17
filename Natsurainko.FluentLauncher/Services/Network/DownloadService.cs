@@ -3,6 +3,7 @@ using FluentLauncher.Infra.UI.Notification;
 using Microsoft.UI.Xaml.Controls;
 using Natsurainko.FluentLauncher.Models;
 using Natsurainko.FluentLauncher.Models.UI;
+using Natsurainko.FluentLauncher.Services.Download;
 using Natsurainko.FluentLauncher.Services.Settings;
 using Natsurainko.FluentLauncher.Services.Storage;
 using Natsurainko.FluentLauncher.Utils.Extensions;
@@ -102,6 +103,20 @@ internal partial class DownloadService
 
         await App.DispatcherQueue.EnqueueAsync(() => DownloadTasks.Insert(0, installInstanceTask));
         await installInstanceTask.EnqueueAsync();
+    }
+
+    /// <summary>
+    /// Mindustry rebrand: install a Mindustry instance from a GitHub release asset.
+    /// No mod loaders, no Modrinth, no vanilla manifest — just one .jar download
+    /// plus an instance registration so <see cref="Services.Launch.LaunchService"/>'s
+    /// Mindustry short-circuit can find the jar via <c>InstanceConfig.GameJarPath</c>.
+    /// </summary>
+    public async Task InstallMindustryInstanceAsync(MindustryInstallConfig config)
+    {
+        var task = new MindustryInstallTaskViewModel(this, config);
+
+        await App.DispatcherQueue.EnqueueAsync(() => DownloadTasks.Insert(0, task));
+        await task.EnqueueAsync();
     }
 
     public async Task InstallModpackAsync(ModpackInstallConfig modpackInstallConfig)

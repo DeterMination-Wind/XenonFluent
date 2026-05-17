@@ -105,6 +105,19 @@ internal class LaunchService(
         {
             InstanceConfig config = instance.GetConfig();
             config.LastLaunchTime = DateTime.Now;
+
+            // ---- Mindustry rebrand short-circuit ----
+            // If the instance has a Mindustry game .jar configured, skip the entire
+            // Minecraft pipeline (account refresh, vanilla deps, MinecraftProcessBuilder)
+            // and just run `javaw.exe -jar <jar>` with the user's JVM args.
+            if (!string.IsNullOrWhiteSpace(config.GameJarPath) && File.Exists(config.GameJarPath))
+            {
+                minecraftProcess = BuildMindustryProcess(instance, config, settingsService);
+                LaunchProcess(minecraftProcess, cancellationToken, progress, outputDataReceivedHandler, errorDataReceivedHandler);
+                logger.MinecraftProcessCreated(instance.InstanceId, minecraftProcess.JavaPath);
+                return minecraftProcess;
+            }
+            // ---- end Mindustry short-circuit ----
             await App.GetService<QuickLaunchService>().AddLatestMinecraftInstance(instance);
 
             var preCheckData = await PreCheckLaunchNeeds(instance, config, cancellationToken, progress);
@@ -468,6 +481,77 @@ internal class LaunchService(
         ));
 
         return mcProcess;
+    }
+
+    /// <summary>
+    /// Mindustry rebrand: short-circuit launcher.
+    /// Picks an appropriate Java from <see cref="SettingsService.Javas"/>, builds a
+    /// minimal <c>java -jar &lt;mindustry.jar&gt;</c> command (with user JVM args + heap),
+    /// and returns a started <see cref="MinecraftProcess"/>. Skips Mojang account
+    /// refresh, vanilla dependency resolution, and the FluentCore arg builder.
+    /// </summary>
+    private static MinecraftProcess BuildMindustryProcess(
+        MinecraftInstance instance,
+        InstanceConfig config,
+        SettingsService settingsService)
+    {
+        var jarPath = config.GameJarPath!;
+        var workingDir = Path.GetDirectoryName(jarPath) ?? instance.GetGameDirectory();
+
+        // Java pick: prefer ActiveJava, else first non-empty entry, else throw.
+        string? javaPath = !string.IsNullOrWhiteSpace(settingsService.ActiveJava)
+            ? settingsService.ActiveJava
+            : settingsService.Javas.FirstOrDefault(j => !string.IsNullOrWhiteSpace(j) && File.Exists(j));
+        if (string.IsNullOrWhiteSpace(javaPath) || !File.Exists(javaPath))
+            throw new NoActiveJavaRuntimeException();
+
+        var args = new List<string>();
+
+        // Heap
+        var (maxMem, minMem) = settingsService.EnableAutoMemory
+            ? MemoryUtils.CalculateJavaMemory()
+            : (settingsService.JavaMemory, settingsService.JavaMemory);
+        if (minMem > 0) args.Add($"-Xms{minMem}M");
+        if (maxMem > 0) args.Add($"-Xmx{maxMem}M");
+
+        // User VM args from per-instance config (no global default in SettingsService).
+        if (config.EnableSpecialSetting && config.VmParameters != null)
+            args.AddRange(config.VmParameters);
+
+        // The jar
+        args.Add("-jar");
+        args.Add($"\"{jarPath}\"");
+
+        var mp = new MinecraftProcess(javaPath, workingDir, args, []);
+
+        // Per-instance data isolation. Mindustry/Arc on Windows resolves its data
+        // directory by reading the AppData env var and appending "\Mindustry"
+        // (Arc's OS.getAppDataDirectoryString → System.getenv("AppData")).
+        // We point AppData at the instance's own ".data" folder, so mods, saves,
+        // schematics and settings.bin all land under
+        //   {workingDir}\.data\Mindustry\
+        // and are completely separated between instances. LOCALAPPDATA is mirrored
+        // for the few crash-handler paths that read it.
+        //
+        // TMP/TEMP also gets pinned into the instance, because under an MSIX
+        // packaged launcher the inherited %TEMP% (under AppData\Local) is
+        // virtualized to the package sandbox — Arc extracts bundled OGGs from
+        // the jar via Java I/O but SoLoud's native loader reads them back via
+        // raw Win32 calls; the two paths can disagree across the MSIX
+        // redirector and the music load fails ("File not found"). A path under
+        // %UserProfile%\Documents is not subject to that redirector, so both
+        // sides see the same physical file.
+        var dataDir = Path.Combine(workingDir, ".data");
+        var tmpDir = Path.Combine(dataDir, "tmp");
+        Directory.CreateDirectory(dataDir);
+        Directory.CreateDirectory(tmpDir);
+        var env = mp.Process.StartInfo.Environment;
+        env["AppData"] = dataDir;
+        env["LOCALAPPDATA"] = dataDir;
+        env["TMP"] = tmpDir;
+        env["TEMP"] = tmpDir;
+
+        return mp;
     }
 
     static void LaunchProcess(

@@ -13,6 +13,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Windows.Storage.Pickers;
 
@@ -236,6 +237,50 @@ internal partial class LaunchViewModel : SettingsPageVM, ISettingsViewModel
         ExplorerHelper.ShowAndSelectFile(java);
     }
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanDownloadTemurin))]
+    public partial bool DownloadingTemurin { get; set; }
+
+    [ObservableProperty]
+    public partial double TemurinProgress { get; set; }
+
+    public bool CanDownloadTemurin => !DownloadingTemurin;
+
+    [RelayCommand]
+    public async Task DownloadTemurin()
+    {
+        try
+        {
+            DownloadingTemurin = true;
+            TemurinProgress = 0;
+
+            var downloader = new TemurinDownloader();
+            var progress = new Progress<double>(p => TemurinProgress = p);
+            var javaw = await downloader.DownloadAsync(
+                TemurinDownloader.GetRecommendedMajor(),
+                progress,
+                CancellationToken.None);
+
+            if (!Javas.Contains(javaw))
+            {
+                Javas.Add(javaw);
+                OnPropertyChanged(nameof(IsJavasEmpty));
+            }
+
+            ActiveJava = javaw;
+            _notificationService.JavaDownloaded(javaw);
+        }
+        catch (Exception ex)
+        {
+            _notificationService.JavaDownloadFailed(ex);
+        }
+        finally
+        {
+            DownloadingTemurin = false;
+            TemurinProgress = 0;
+        }
+    }
+
     #endregion
 }
 
@@ -258,4 +303,10 @@ public static partial class LaunchViewModelNotifications
 
     [ExceptionNotification(Title = "Notifications__JavaSearchFailed")]
     public static partial void JavaSearchFailed(this INotificationService notificationService, Exception exception);
+
+    [Notification<InfoBar>(Title = "Notifications__JavaDownloaded", Message = "{path}", Type = NotificationType.Success)]
+    public static partial void JavaDownloaded(this INotificationService notificationService, string path);
+
+    [ExceptionNotification(Title = "Notifications__JavaDownloadFailed")]
+    public static partial void JavaDownloadFailed(this INotificationService notificationService, Exception exception);
 }

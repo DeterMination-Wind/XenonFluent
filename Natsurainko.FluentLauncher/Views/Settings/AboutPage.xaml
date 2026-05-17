@@ -75,7 +75,7 @@
 
                 <controls:SettingsCard
                     x:Uid="Settings_AboutPage_Card3"
-                    Description="Minecraft is copyrighted by Mojang Studios. We are not responsible for any copyright infringement arising from use of this software."
+                    Description="Mindustry is copyrighted by Anuken Studios. We are not responsible for any copyright infringement arising from use of this software."
                     Header="Statements"
                     HeaderIcon="{xh:FontIcon Glyph=&#xea1f;}" />
 

@@ -427,125 +427,19 @@
                     <ColumnDefinition Width="10" />
                     <ColumnDefinition Width="1*" />
                 </Grid.ColumnDefinitions>
-                <Grid VerticalAlignment="Bottom">
+                <!--
+                    Mindustry rebrand: account selector (avatar + dropdown + add/manage
+                    flyout) removed. The whole left column used to host an
+                    AccountAvatar + Microsoft/Yggdrasil profile dropdown bound to
+                    HomeViewModel.ActiveAccount. AccountAvatar/ListView/AddAccount/
+                    GoToAccountSettings are all gone now.
+                -->
+                <Grid VerticalAlignment="Bottom" Visibility="Collapsed">
                     <Border
                         Name="AccountSelectorArea"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"
-                        CornerRadius="8"
-                        Shadow="{ThemeResource SharedShadow}" />
-                    <DropDownButton
-                        Name="AccountSelectorButton"
-                        Background="Transparent"
-                        BorderBrush="Transparent"
-                        CornerRadius="8"
-                        Style="{ThemeResource LeftDropDownButtonStyle}">
-                        <Grid Margin="-2,2">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="8" />
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
-                            <userControls:AccountAvatar
-                                Width="32"
-                                Height="32"
-                                Account="{x:Bind VM.ActiveAccount, Mode=OneWay}" />
-                            <StackPanel Grid.Column="2" VerticalAlignment="Center">
-                                <TextBlock Style="{ThemeResource BaseTextBlockStyle}" Text="{x:Bind VM.ActiveAccount.Name, Mode=OneWay}" />
-                                <TextBlock Foreground="{ThemeResource ApplicationSecondaryForegroundThemeBrush}" Style="{ThemeResource CaptionTextBlockStyle}">
-                                    <Run Text="{x:Bind local:HomePage.GetAccountTypeName(VM.ActiveAccount.Type), Mode=OneWay}" />
-                                    <Run Text="{x:Bind local:HomePage.TryGetYggdrasilServerName(VM.ActiveAccount), Mode=OneWay}" />
-                                </TextBlock>
-                            </StackPanel>
-                        </Grid>
-                        <DropDownButton.Flyout>
-                            <Flyout x:Name="accountSelectorFlyout" Placement="TopEdgeAlignedLeft">
-                                <StackPanel Margin="-8,-10,-8,-10" Spacing="3">
-                                    <ListView
-                                        x:Name="AccountsListView"
-                                        Margin="-6,0"
-                                        ItemsSource="{x:Bind VM.Accounts}"
-                                        SelectedItem="{x:Bind VM.ActiveAccount, Mode=TwoWay}"
-                                        SelectionChanged="HideAccountFlyoutHandler">
-                                        <ListView.ItemTemplate>
-                                            <DataTemplate x:DataType="auth:Account">
-                                                <Grid Margin="0,8">
-                                                    <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="Auto" />
-                                                        <ColumnDefinition Width="8" />
-                                                        <ColumnDefinition Width="*" />
-                                                    </Grid.ColumnDefinitions>
-                                                    <userControls:AccountAvatar
-                                                        Width="32"
-                                                        Height="32"
-                                                        Account="{x:Bind}" />
-                                                    <StackPanel Grid.Column="2" VerticalAlignment="Center">
-                                                        <TextBlock Style="{ThemeResource BaseTextBlockStyle}" Text="{x:Bind Name}" />
-                                                        <TextBlock Foreground="{ThemeResource ApplicationSecondaryForegroundThemeBrush}" Style="{ThemeResource CaptionTextBlockStyle}">
-                                                            <Run Text="{x:Bind local:HomePage.GetAccountTypeName(Type)}" />
-                                                            <Run Text="{x:Bind local:HomePage.TryGetYggdrasilServerName((acc:Account))}" />
-                                                        </TextBlock>
-                                                    </StackPanel>
-                                                </Grid>
-                                            </DataTemplate>
-                                        </ListView.ItemTemplate>
-                                    </ListView>
-                                    <Border
-                                        Height="1"
-                                        Margin="-8,1,-8,3"
-                                        HorizontalAlignment="Stretch"
-                                        BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
-                                        BorderThickness="1" />
-                                    <Button
-                                        Margin="-2,0"
-                                        Click="HideAccountFlyoutHandler"
-                                        Command="{x:Bind VM.AddAccountCommand}"
-                                        Style="{ThemeResource MenuItemButtonStyle}">
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto" />
-                                                <ColumnDefinition Width="10" />
-                                                <ColumnDefinition Width="*" />
-                                            </Grid.ColumnDefinitions>
-                                            <FontIcon
-                                                VerticalAlignment="Center"
-                                                FontSize="14"
-                                                Glyph="&#xe8fa;" />
-
-                                            <TextBlock
-                                                x:Uid="Home_HomePage_AddAccountTB"
-                                                Grid.Column="2"
-                                                HorizontalAlignment="Left"
-                                                Text="Add an account" />
-                                        </Grid>
-                                    </Button>
-                                    <Button
-                                        Margin="-2,0"
-                                        Click="HideAccountFlyoutHandler"
-                                        Command="{x:Bind VM.GoToAccountSettingsCommand}"
-                                        Style="{ThemeResource MenuItemButtonStyle}">
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto" />
-                                                <ColumnDefinition Width="10" />
-                                                <ColumnDefinition Width="1*" />
-                                            </Grid.ColumnDefinitions>
-                                            <FontIcon
-                                                VerticalAlignment="Center"
-                                                FontSize="14"
-                                                Glyph="&#xE77B;" />
-
-                                            <TextBlock
-                                                x:Uid="Home_HomePage_ManageAccountsTB"
-                                                Grid.Column="2"
-                                                HorizontalAlignment="Left"
-                                                Text="Manage accounts" />
-                                        </Grid>
-                                    </Button>
-                                </StackPanel>
-                            </Flyout>
-                        </DropDownButton.Flyout>
-                    </DropDownButton>
+                        CornerRadius="8" />
                 </Grid>
                 <Button
                     x:Name="LaunchButton"
