@@ -79,12 +79,12 @@ Start-Process "shell:AppsFolder\26553XcubeStudio.Natsurianko.FluentLauncher.Dev_
 ## 🙏 致谢
 
 - 基于 **[Natsurainko.FluentLauncher](https://github.com/Xcube-Studio/Natsurainko.FluentLauncher)** by [Xcube-Studio](https://github.com/Xcube-Studio)
+- <img src="docs/images/credits/Wayzer.jpg" width="20" align="center" /> **Wayzer** — 提供 [`gh.tinylake.top`](https://gh.tinylake.top) GitHub 镜像加速
 - Mindustry 来源仓库：
   - [Anuken/Mindustry](https://github.com/Anuken/Mindustry)
   - [TinyLake/MindustryX](https://github.com/TinyLake/MindustryX)
   - [BlackDeluxeCat/CN-ARC](https://github.com/BlackDeluxeCat/CN-ARC)
   - [mindustry-antigrief/mindustry-foo-client](https://github.com/mindustry-antigrief/mindustry-foo-client)
-- GitHub 镜像：[gh.tinylake.top](https://gh.tinylake.top)
 - Java 发行：[Eclipse Temurin](https://adoptium.net/) (Adoptium)
 
 ## 📄 许可
