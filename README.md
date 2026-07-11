@@ -3,6 +3,12 @@
 <img src="Natsurainko.FluentLauncher/Assets/AppIcon.png" width="128" alt="Xenon-Fluent" />
 
 # Xenon-Fluent
+<h1 align="center">
+  <a href="https://github.com/DeterMination-Wind/XenonFluent/releases/latest"><img src="https://img.shields.io/github/v/release/DeterMination-Wind/XenonFluent?display_name=release&label=Latest%20Release&color=green"></a>
+  <a href="https://github.com/DeterMination-Wind/XenonFluent/releases"><img src="https://img.shields.io/github/downloads/DeterMination-Wind/XenonFluent/total?label=Downloads&color=blue"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/DeterMination-Wind/XenonFluent?label=License"></a>
+  <a href="https://github.com/DeterMination-Wind/XenonFluent"><img src="https://img.shields.io/github/stars/DeterMination-Wind/XenonFluent?style=flat&label=Star%20this%20mod!&color=yellow"></a>
+</h1>
 
 一个基于 [FluentLauncher](https://github.com/Xcube-Studio/Natsurainko.FluentLauncher) 开发的 Fluent 风格 Mindustry 启动器
 
